@@ -1,0 +1,9 @@
+{% extends "base_site.html" %}
+{% load adminmedia  i18n %}
+
+{% block content %}
+<form id="edit_person_form" action="{% url edit_person %}" method="post" class="edit_person">{% csrf_token %}
+{{ form.as_ul }}
+<input type="submit" value="Edit" id="form-submit" />
+</form>
+{% endblock %}

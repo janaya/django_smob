@@ -1,0 +1,10 @@
+{% load adminmedia  i18n %}
+
+  <p><a href="{{post.slug}}">{{ post.content }}</a></p>
+  {% if user != post.creator.user %}
+    <p>by: {{ post.creator }}</p>
+  {% endif %}
+  {% if post.location %}
+    <p>location: {{ post.location }}</p>
+  {% endif %}
+  <p>{{ post.created }}</p>

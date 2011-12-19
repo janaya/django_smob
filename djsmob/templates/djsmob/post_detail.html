@@ -1,0 +1,14 @@
+{% extends "base_site.html" %}
+{% load adminmedia  i18n %}
+
+{% block content %}
+<h2>Post</h2>
+  {% comment %}
+    <ul>
+        {% for field in post %}
+            <li>{{ field.label_tag }}: {{ field }}</li>
+        {% endfor %}
+    </ul>
+  {% endcomment %}
+  {% include "djsmob/post_detail_body.html" %}
+{% endblock %}

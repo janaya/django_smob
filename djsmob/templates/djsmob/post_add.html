@@ -1,0 +1,10 @@
+{% extends "base_site.html" %}
+{% load adminmedia  i18n %}
+
+{% block content %}
+  <h2>Add post</h2>
+  {% if form.errors %}
+    <p class="error">Sorry, some field has error</p>
+  {% endif %}
+  {% include "djsmob/post_add_body.html" %}
+{% endblock %}
