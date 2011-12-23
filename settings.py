@@ -146,28 +146,34 @@ INSTALLED_APPS = (
 # the site admins on every HTTP 500 error.
 # See http://docs.djangoproject.com/en/dev/topics/logging for
 # more details on how to customize your logging configuration.
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
-        },
-    },
-    'handlers': {
-        'console':{
-            'level':'DEBUG',
-            'class':'logging.StreamHandler',
-            'formatter': 'verbose'
-        },
-    },
-    'loggers': {
-        'django_smob': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-        }
-    }
-}
+#LOGGING = {
+#    'version': 1,
+#    'disable_existing_loggers': False,
+#    'formatters': {
+#        'verbose': {
+#            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
+#        },
+#    },
+#    'handlers': {
+#        'console':{
+#            'level':'DEBUG',
+#            'class':'logging.StreamHandler',
+#            'formatter': 'verbose'
+#        },
+#    },
+#    'loggers': {
+#        'django_smob': {
+#            'handlers': ['console'],
+#            'level': 'DEBUG',
+#        }
+#    }
+#}
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s %(levelname)s %(message)s',
+)
+
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
@@ -177,3 +183,5 @@ TEMPLATE_DIRS = (
 
 #FIXME: hackish
 SITE_URL='http://localhost:8000'
+HUB_SERVER_URL = "http://pubsubhubbub.appspot.com/"
+GENERATOR_AGENT = "http://smob.me/#smob?v=2.2"

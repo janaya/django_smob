@@ -6,75 +6,12 @@ from django.core.urlresolvers import reverse
 #from django.contrib.auth.views import logout
 from django.core import serializers
 from django.conf import settings
-from rdflib import URIRef, Namespace
-import rdflib
-from queries import query_posts
+
+import logging
+
 from models import *
-
-FOAF=Namespace("http://xmlns.com/foaf/0.1/" )
-#RDFS=Namespace("http://www.w3.org/2000/01/rdf-schema#")
-SIOC=Namespace("http://rdfs.org/sioc/spec/")
-SIOCT=Namespace("http://rdfs.org/sioc/types#")
-DC=Namespace("http://purl.org/dc/elements/1.1/")
-DCT=Namespace("http://purl.org/dc/terms/")
-TAGS=Namespace("http://www.holygoat.co.uk/owl/redwood/0.1/tags/")
-MOAT=Namespace("http://moat-project.org/ns#")
-OPO=Namespace("http://online-presence.net/opo/ns#")
-OPO_ACTIONS=Namespace("http://online-presence.net/OPO_ACTIONS/ns#")
-CTAG=Namespace("http://commontag.org/ns#")
-SMOB=Namespace("http://smob.me/ns#")
-XSD=Namespace("http://www.w3.org/2001/XMLSchema#")
-REV=Namespace("http://purl.org/stuff/rev#")
-GEO=Namespace("http://www.w3.org/2003/01/geo/wgs84_pos#")
-
-PUSH = Namespace("http://vocab.deri.ie/push/")
-CERT = Namespace("http://www.w3.org/ns/auth/cert#")
-RSA = Namespace("http://www.w3.org/ns/auth/rsa#")
-REL = Namespace('http://purl.org/vocab/relationship/')
-
-
-ns = dict(
-          #rdfs=RDFS, 
-          #rdf=RDF,
-          rdf=Namespace('http://www.w3.org/1999/02/22-rdf-syntax-ns#'),
-          rdfs=Namespace('http://www.w3.org/2000/01/rdf-schema#'),
-         
-          cert=CERT, 
-          rsa=RSA,
-          
-          dc=DC,
-          dct=DCT,
-          
-          foaf=FOAF, 
-          
-          sioc=SIOC,
-          sioct=SIOCT,
-          
-          tags=TAGS,
-          moat=MOAT,
-          ctag=CTAG,
-          
-          opo=OPO,
-          opo_actions=OPO_ACTIONS,
-          
-          smob=SMOB,
-          push=PUSH, 
-          
-          xsd=XSD,
-          rev=REV,
-          geo=GEO)
-
-#store = ConjunctiveGraph()
-#store = rdflib.graph.Graph(settings.STORE)()
-
-STORE = rdflib.plugin.get('SQLite', rdflib.store.Store)('smob.db')
-try: 
-    STORE.open('.', create=True) 
-except:
-    STORE.open('.', create=False)
-##        logging.debug("store")
-##        logging.debug(STORE)
-store = rdflib.Graph(STORE)
+from forms import *
+from namespaces import *
 
 def person(request):
 #    print request.user
@@ -123,6 +60,7 @@ def person_edit(request):
 
 #@login_required
 def post_add(request):
+    logging.debug("views.py, post_add")
     if request.method == 'POST':
         print "method post"
         form = PostForm(request.POST)
@@ -160,7 +98,8 @@ def post_add(request):
 
     else: # GET
         form = PostForm()
-        print "method not post  "
+        logging.debug("method not post")
+        logging.debug(form)
     return render_to_response('djsmob/post_add.html', {'form': form,},
                                context_instance=RequestContext(request))
 

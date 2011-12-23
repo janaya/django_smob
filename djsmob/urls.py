@@ -4,7 +4,8 @@ from django.views.generic.simple import redirect_to
 from django.views.generic import DetailView, ListView
 from django.views.generic.simple import direct_to_template
 
-from models import *
+#from models import *
+from feeds import PostFeed, RDFPostFeed, XMLPostFeed
 
 urlpatterns = patterns('djsmob.views',
     url(r'^me/$', 'person', name='djsmob-person'),
@@ -32,4 +33,9 @@ urlpatterns = patterns('djsmob.views',
 ##    url(r'^json/post/(?P<slug>[-\w]+)/$', 'post_json', name='post_json'),
 ##    
 ##    url(r'^data/me/$', 'person_rdf', name='person_rdf'),
+)
+urlpatterns += patterns('',
+    (r'^rss/post/$', PostFeed()),
+    (r'^rssrdf/post/$', RDFPostFeed()),
+    (r'^xmlrdf/post/$', XMLPostFeed()),
 )

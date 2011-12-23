@@ -1,94 +1,57 @@
+#!/usr/bin/python
+# vim: set expandtab tabstop=4 shiftwidth=4:
+# -*- coding: utf-8 -*-
+#
+# This file is part of androsmob
+#
+# androsmob is distributed under the terms of the BSD License. The full license is in
+# the file LICENSE, distributed as part of this software.
+#
+# Copyright (c) 2011, Digital Enterprise Research Institute (DERI),NUI Galway.
+# All rights reserved.
+#
+# Author: Julia Anaya
+# Email: julia dot anaya at gmail dot com
+#
+# FILE:
+# models.py
+#
+# DESCRIPTION:
+#
+# TODO:
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.translation import ugettext_lazy as _
-from datetime import datetime
 from django.template.defaultfilters import slugify
 from django.core.urlresolvers import reverse
-from django.conf import settings
-from urlparse import urlparse
-from rdflib import URIRef, Literal, BNode, Namespace, ConjunctiveGraph, RDF, RDFS
-from rdflib import Namespace
-import rdflib
-from queries import query_posts, query_post
+
+from datetime import datetime
+
 import logging
-logger = logging.getLogger('django_smog')
 
-FOAF=Namespace("http://xmlns.com/foaf/0.1/" )
-#RDFS=Namespace("http://www.w3.org/2000/01/rdf-schema#")
-SIOC=Namespace("http://rdfs.org/sioc/spec/")
-SIOCT=Namespace("http://rdfs.org/sioc/types#")
-DC=Namespace("http://purl.org/dc/elements/1.1/")
-DCT=Namespace("http://purl.org/dc/terms/")
-TAGS=Namespace("http://www.holygoat.co.uk/owl/redwood/0.1/tags/")
-MOAT=Namespace("http://moat-project.org/ns#")
-OPO=Namespace("http://online-presence.net/opo/ns#")
-OPO_ACTIONS=Namespace("http://online-presence.net/OPO_ACTIONS/ns#")
-CTAG=Namespace("http://commontag.org/ns#")
-SMOB=Namespace("http://smob.me/ns#")
-XSD=Namespace("http://www.w3.org/2001/XMLSchema#")
-REV=Namespace("http://purl.org/stuff/rev#")
-GEO=Namespace("http://www.w3.org/2003/01/geo/wgs84_pos#")
+from urlparse import urlparse
 
-PUSH = Namespace("http://vocab.deri.ie/push/")
-CERT = Namespace("http://www.w3.org/ns/auth/cert#")
-RSA = Namespace("http://www.w3.org/ns/auth/rsa#")
-REL = Namespace('http://purl.org/vocab/relationship/')
+from rdflib import Literal, BNode, ConjunctiveGraph, Graph, RDF, RDFS
+import rdflib
 
+from namespaces import *
+from queries import *
 
-NS = dict(
-          #rdfs=RDFS, 
-          #rdf=RDF,
-          rdf=Namespace('http://www.w3.org/1999/02/22-rdf-syntax-ns#'),
-          rdfs=Namespace('http://www.w3.org/2000/01/rdf-schema#'),
-         
-          cert=CERT, 
-          rsa=RSA,
-          
-          dc=DC,
-          dct=DCT,
-          
-          foaf=FOAF, 
-          
-          sioc=SIOC,
-          sioct=SIOCT,
-          
-          tags=TAGS,
-          moat=MOAT,
-          ctag=CTAG,
-          
-          opo=OPO,
-          opo_actions=OPO_ACTIONS,
-          
-          smob=SMOB,
-          push=PUSH, 
-          
-          xsd=XSD,
-          rev=REV,
-          geo=GEO)
+#logger = logging.getLogger('django_smob')
 
-
-
-#STORE = ConjunctiveGraph()
+# verion>=3
 #STORE = rdflib.graph.Graph(settings.STORE)()
 
 STORE_DB  = rdflib.plugin.get('SQLite', rdflib.store.Store)('smob.db')
 try: 
     STORE_DB.open('.', create=True) 
+    # bind namespaces only when created
+    [STORE.bind(*x) for x in NS.items()]
 except:
     STORE_DB.open('.', create=False)
-##        logging.debug("STORE")
-##        logging.debug(STORE)
 STORE = rdflib.Graph(STORE_DB)
-
-SITE_URI = URIRef(settings.SITE_URL)
-FOAF_DOC_URI = URIRef(settings.SITE_URL + "/me")
-FOAF_URI = URIRef(settings.SITE_URL + "/me#id")
-POST_URI = URIRef(settings.SITE_URL + "/data/post/")
-FOLLOWINGS_URI = URIRef(settings.SITE_URL + "/data/followings")
-PRIVACY_PREFERENCES_URI = URIRef(settings.SITE_URL + "/data/privacy_preferences")
-PRIVACY_PREFERENCE_URI = URIRef(settings.SITE_URL + "data/privacy_preference/")
-OPO_URI = URIRef(settings.SITE_URL + "/me#presence")
-
+#STORE = ConjunctiveGraph(STORE_DB)
 
 
 class PersonManager(models.Manager):
@@ -199,7 +162,9 @@ class PostManager(models.Manager):
         for instance in r:
             #uri, container, content, created, title, reply_of, 
             #reply_of_of, presence, location, locname = instance
-            print instance
+            logging.debug('PostManager.all() instance')
+            logging.debug(instance)
+            
             uri = instance[0]
             container = instance[1]
             content = instance[2]
@@ -211,6 +176,7 @@ class PostManager(models.Manager):
             location = instance[8]
             locname = instance[9]
             post = Post(slug = uri.replace(str(POST_URI),''), 
+                        title = title,
                         content= content, created=created, 
                         reply_of = reply_of, location = location)
             posts.append(post)
@@ -227,7 +193,8 @@ class PostManager(models.Manager):
         q = query_post % uri
         r = STORE.query(q, initNs=NS)
         for instance in r:
-            print instance
+            logging.debug('PostManager.get() instance')
+            logging.debug(instance)
             #uri, container, content, created, title, reply_of, 
             #reply_of_of, presence, location, locname = instance
             container = instance[0]
@@ -239,7 +206,7 @@ class PostManager(models.Manager):
             presence = instance[6]
             location = instance[7]
             locname = instance[8]
-            post = Post(slug = slug, 
+            post = Post(slug = slug, title = title,
                         content= content, created=created, 
                         reply_of = reply_of, location = location)
         return post
@@ -247,6 +214,7 @@ class PostManager(models.Manager):
 class Post(models.Model):
     #uri = models.URLField(_(''), default=''+self.created, editable=False)
     slug = models.SlugField(unique=True, editable=False)
+    title = models.CharField(_('title'), max_length=140, editable=False)
     content = models.CharField(_('content'), max_length=140)
     created = models.DateTimeField(_('sent'), default=datetime.now, editable=False)
     #reply_of = models.URLField(_(''), default='', editable=False)
@@ -293,8 +261,10 @@ class Post(models.Model):
         #if not self.id:
         self.slug = slugify(self.created)
             #self.has_creator=self.has_creator
+        self.title = 'Updated - '+self.content
         #super(Post, self).save(*args, **kwargs)
-        print(self.slug)
+        logging.debug('Post.save() slug')
+        logging.debug(self.slug)
         self.to_rdf()
         STORE.commit()
 
@@ -319,7 +289,7 @@ class Post(models.Model):
         #STORE.add((post_uri, FOAF["maker"], URIRef(self.maker())))
         
         STORE.add((post_uri, SIOC["content"], Literal(self.content)))
-        STORE.add((post_uri, DCT["title"], Literal('Updated - '+self.content)))
+        STORE.add((post_uri, DCT["title"], Literal(self.title)))
         if self.reply_of:
             STORE.add((post_uri, SIOC["reply_of"], URIRef(self.reply_of.uri())))
         
@@ -337,5 +307,51 @@ class Post(models.Model):
         
 
         rdf=STORE.serialize(format="nt", max_depth=1)
-        print rdf
+        logging.debug('Post.to_rdf(), rdf')
+        logging.debug(rdf)
+        return rdf
 
+
+    def to_rdf_graph(self):
+        g = ConjunctiveGraph()
+        post_uri = URIRef(POST_URI+self.slug)
+        g.add((SITE_URI, RDF.type, SMOB["Hub"]))
+        g.add((post_uri, RDF.type, SIOCT["MicroblogPost"]))
+        g.add((post_uri, SIOC["has_container"], URIRef(self.has_container())))
+        
+        g.add((post_uri, DCT["created"], Literal(self.created))) 
+        #',datatype=_XSD_NS.date) 
+        #g.add((post_uri, SIOC["has_creator"], URIRef(self.has_creator())))
+        #g.add((post_uri, FOAF["maker"], URIRef(self.maker())))
+        
+        g.add((post_uri, SIOC["content"], Literal(self.content)))
+        g.add((post_uri, DCT["title"], Literal(self.title)))
+        if self.reply_of:
+            g.add((post_uri, SIOC["reply_of"], URIRef(self.reply_of.uri())))
+        
+        #opo_uri = URIRef(self.opo_uri())
+        #g.add((opo_uri, RDF.type, OPO["OnlinePresence"]))
+        #g.add((opo_uri, OPO["declaredOn"], URIRef(self.has_creator())))
+        #g.add((opo_uri, OPO["declaredBy"], URIRef(self.maker())))
+        #g.add((opo_uri, OPO["StartTime"], Literal(self.created)))
+        #g.add((opo_uri, OPO["customMessage"], post_uri))
+        
+        if self.location:
+            g.add((opo_uri, OPO["currentLocation"], URIRef(self.location.uri)))
+            g.add((URIRef(self.location.uri), RDFS["label"], Literal(self.location.label)))
+        #g.add(())
+        
+        rdf=g.serialize(format="nt")
+        logging.debug('Post.to_rdf_graph(), rdf')
+        logging.debug(rdf)
+        return rdf
+
+
+    def rdf(self):
+        uri = URIRef(POST_URI+self.slug).n3()
+        q = query_post_rdf % (uri, uri)
+        r = STORE.query(q, initNs=NS)
+        rdf = r.result.serialize(format='nt')
+        logging.debug('Post.rdf(), rdf')
+        logging.debug(rdf)
+        return rdf
