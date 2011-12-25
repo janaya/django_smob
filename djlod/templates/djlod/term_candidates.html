@@ -1,0 +1,18 @@
+<fieldset><legend>Via DBpedia</legend>
+    {% if dbpedia_candidates %}
+        {% for label,uri in dbpedia_candidates.items %}
+            <input type='checkbox' value='{{uri}}' />{{label}} (<a href='{{uri}}' target='_blank'>{{uri}}</a>)<br/>
+        {% endfor %}
+    {% else %}
+        Nothing retrieved from this service<br/>
+    {% endif %}
+</fieldset>
+<fieldset><legend>Via Sindice</legend>
+    {% if sindice_candidates %}
+        {% for label,uri in sindice_candidates.items %}
+            <input type='checkbox' value='{{uri}}' />{{label}} (<a href='{{uri}}' target='_blank'>{{uri}}</a>)<br/>
+        {% endfor %}
+    {% else %}
+        Nothing retrieved from this service<br/>
+    {% endif %}
+</fieldset>

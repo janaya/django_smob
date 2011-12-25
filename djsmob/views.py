@@ -69,13 +69,19 @@ def post_add(request):
             content = form.cleaned_data['content']
             print content
             post_instance = form.save(commit=False)
+            print post_instance.content 
             #post_instance.creator = request.user.profile
             #post_instance.creator = request.META['USER'].profile
             # hackish
             #post_instance.creator = Person.objects.get(name='duy')
             #post_instance.creator = Person.objects.filter(user__username = 'duy')[0]
+            
+            #location_formset = LocationFormSet(request.POST, instance=post_instance)
+            #if location_formset.is_valid():
+            #    post_instance.save()
+            #    location_formset.save() 
+            
             post_instance.save()
-            print post_instance.content 
             
             if request.is_ajax():
                 print "request ajax"
@@ -100,8 +106,11 @@ def post_add(request):
         form = PostForm()
         logging.debug("method not post")
         logging.debug(form)
-    return render_to_response('djsmob/post_add.html', {'form': form,},
-                               context_instance=RequestContext(request))
+        #location_formset = LocationFormSet(instance=Post())
+    return render_to_response('djsmob/post_add.html', {
+                              'form': form,
+                              #"location_formset": location_formset,
+                            }, context_instance=RequestContext(request))
 
 def posts(request):
     posts = Post.objects.all()

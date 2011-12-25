@@ -1,0 +1,6 @@
+<div id="post_add_form-message">
+</div>
+<form id="person_edit_form" action="{% url djsmob-person_edit %}" method="post" class="person_edit">{% csrf_token %}
+{{ form.as_ul }}
+<input type="submit" value="Edit" id="form-submit" />
+</form>

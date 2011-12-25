@@ -8,6 +8,7 @@ urlpatterns = patterns('',
     # Examples:
     # url(r'^$', 'django_smob2.views.home', name='home'),
     url(r'^', include('django_smob2.djsmob.urls')),
+    url(r'^lod/', include('django_smob2.djlod.urls')),
 
     # Uncomment the admin/doc line below to enable admin documentation:
     # url(r'^admin/doc/', include('django.contrib.admindocs.urls')),

@@ -141,8 +141,19 @@ class Person(models.Model):
         rdf=STORE.serialize(format="pretty-xml", max_depth=1)
         return rdf
 
-User.profile = property(lambda u: Person.objects.get_or_create(user=u)[0])
+#User.profile = property(lambda u: Person.objects.get_or_create(user=u)[0])
 
+class Relationship(models.Model):
+    uri = models.URLField(_('relationship'), )
+    label = models.CharField(_('label'),max_length=255)
+
+    def __unicode__(self):
+        return self.label
+    
+#class Knows(models.Model):
+#    from_person = models.ForeignKey(Person)
+#    to_person = models.ForeignKey(Person)
+#    type_rel = models.ForeignKey(Relationship)
 
 class Location(models.Model):
     uri = models.URLField(_('location'), )
@@ -219,7 +230,9 @@ class Post(models.Model):
     created = models.DateTimeField(_('sent'), default=datetime.now, editable=False)
     #reply_of = models.URLField(_(''), default='', editable=False)
     reply_of = models.ForeignKey('Post', blank=True, null=True)
-    location = models.ForeignKey(Location, blank=True, null=True)
+    #location = models.ForeignKey(Location, blank=True, null=True)
+    location_uri = models.URLField(_('location uri'), editable=False)
+    location_label = models.CharField(_('location'), max_length=140, blank=True, null=True)
     
 #    has_creator = models.URLField(_(''), default='', editable=False)
     creator = models.ForeignKey(Person, related_name='creator_of', editable=False)

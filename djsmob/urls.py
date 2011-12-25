@@ -9,7 +9,7 @@ from feeds import PostFeed, RDFPostFeed, XMLPostFeed
 
 urlpatterns = patterns('djsmob.views',
     url(r'^me/$', 'person', name='djsmob-person'),
-##    url(r'^me/edit/$', 'person_edit', name='person_edit'),
+    url(r'^me/edit/$', 'person_edit', name='djsmob-person_edit'),
 
     url(r'^post/add/$', 'post_add', name='djsmob-post_add'),
     url(r'^post/$', 

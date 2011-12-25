@@ -139,6 +139,7 @@ INSTALLED_APPS = (
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
     'djsmob',
+    'djlod',
 )
 
 # A sample logging configuration. The only tangible logging
@@ -179,6 +180,9 @@ TEMPLATE_DIRS = (
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
     os.path.join(PROJECT_ROOT, 'templates'),
+    # FIXME: hackish
+    os.path.join(PROJECT_ROOT, 'djsmob/templates/djsmob'),
+    os.path.join(PROJECT_ROOT, 'djlod/templates/djlod'),
 )
 
 #FIXME: hackish

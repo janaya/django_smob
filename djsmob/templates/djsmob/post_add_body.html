@@ -2,5 +2,6 @@
 </div>
 <form id="post_add_form" action="{% url djsmob-post_add %}" method="post" class="post_add">{% csrf_token %}
 {{ form.as_ul }}
+{{ location_formset.as_ul }}
 <input type="submit" value="Add" id="form-submit" />
 </form>
