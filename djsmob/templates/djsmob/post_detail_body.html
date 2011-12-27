@@ -4,7 +4,7 @@
   {% if user != post.creator.user %}
     <p>by: {{ post.creator }}</p>
   {% endif %}
-  {% if post.location %}
-    <p>location: {{ post.location }}</p>
+  {% if post.location_label and post.location_uri %}
+    <p>location: <a href="{{post.location_uri}}">{{ post.location_label }}</a></p>
   {% endif %}
   <p>{{ post.created }}</p>

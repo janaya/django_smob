@@ -25,6 +25,7 @@ from django.contrib.auth.models import User
 from django.utils.translation import ugettext_lazy as _
 from django.template.defaultfilters import slugify
 from django.core.urlresolvers import reverse
+from django.conf import settings
 
 from datetime import datetime
 
@@ -40,41 +41,166 @@ from queries import *
 
 #logger = logging.getLogger('django_smob')
 
+logging.debug("how many times is executed models.py?")
+
 # verion>=3
 #STORE = rdflib.graph.Graph(settings.STORE)()
 
-STORE_DB  = rdflib.plugin.get('SQLite', rdflib.store.Store)('smob.db')
+STORE_DB  = rdflib.plugin.get('SQLite', rdflib.store.Store)(settings.STORE_DB_NAME)
 try: 
-    STORE_DB.open('.', create=True) 
+    r = STORE_DB.open(settings.STORE_DB_PATH, create=True) 
+    logging.debug('store_db')
+    logging.debug(r)
     # bind namespaces only when created
     [STORE.bind(*x) for x in NS.items()]
 except:
-    STORE_DB.open('.', create=False)
+    r = STORE_DB.open('.', create=False)
+    logging.debug('store_db')
+    logging.debug(r)
 STORE = rdflib.Graph(STORE_DB)
 #STORE = ConjunctiveGraph(STORE_DB)
+#g= ConjunctiveGraph(STORE_DB, Namespace('http://localhost:8000')
+#http://xmppwebid.github.com/xmppwebid/julia
+#[STORE.bind(*x) for x in NS.items()]
 
+class HubManager(models.Manager):
+    def get(self):
+        hub = None
+        q = query_select_hub
+        r = STORE.query(q, initNs=NS)
+        for instance in r:
+            logging.debug('HubManager.get() instance')
+            logging.debug(instance)
+            #?site_uri, ?site_rss, ?foaf_doc_uri
+            site_uri = instance[0]
+            rss_url = instance[1]
+            foaf_doc_uri = instance[2]
+            hub = Hub(site_uri = str(site_uri), 
+                    foaf_doc_uri = str(foaf_doc_uri),
+                    rss_url = rss_url)
+        return hub
+
+class Hub(models.Model):
+    site_uri = models.URLField(_('Site URI'), default=str(SITE_URI))
+    foaf_doc_uri = models.URLField(_('FOAF Doc URI'), 
+                                    default=str(FOAF_DOC_URI))
+    rss_url = models.URLField(_('RSS URI'), default=str(RSS_URI))
+    objects = HubManager()
+
+    def __unicode__(self):
+        return self.site_uri
+        
+    def rdf(self):
+        rdf = """?site_uri a push:SemanticHub . 
+            ?site_rss push:has_hub ?site_uri .
+            ?site_rss push:has_owner ?foaf_doc_uri . 
+            """ % (URIRef(self.site_uri).n3(), 
+        URIRef(self.rss_url).n3(), URIRef(self.site_uri).n3(), 
+        URIRef(self.rss_url).n3(), URIRef(self.foaf_doc_uri).n3())
+        logging.debug('Hub.rdf(), rdf')
+        logging.debug(rdf)
+        return rdf
+        
+    def to_graph(self):
+        g = Graph(STORE_DB)
+        g.add((URIRef(self.site_uri), RDF.type, PUSH['SemanticHub']))
+        g.add((URIRef(self.rss_url), PUSH['has_hub'],
+                URIRef(self.site_uri)))
+        g.add((URIRef(self.rss_url), PUSH['has_owner'],
+                URIRef(self.foaf_doc_uri)))
+        rdf=g.serialize(format="nt")
+        logging.debug('Hub.to_rdf(), rdf')
+        logging.debug(rdf)
+        return g
+    
+    def insert_query(self):
+        rdf = self.rdf()
+        q = query_insert_into_graph_triples % (HUB_URI, rdf)
+        logging.debug("query")
+        logging.debug(q)
+        r = STORE.query(q, initNs=NS)
+        logging.debug("result insert query")
+        logging.debug(r)
+    
+    def save(self, *args, **kwargs):
+        #g = self.to_graph()
+        #g.commit()
+        self.insert_query()
+        
+
+class InterestManager(models.Manager):
+    def all():
+        interests = []
+        q = query_interests
+        r = STORE.query(q, initNs=NS)
+        for instance in r:
+            logging.debug('InterestManager.all() instance')
+            logging.debug(instance)
+            
+            uri = instance[0]
+            label = instance[1]
+            interest = Interest(uri = uri, 
+                        label = label,)
+            interests.append(interest)
+        return interests
+
+class Interest(models.Model):
+    uri = models.URLField(_('interest uri'), )
+    label = models.CharField(_('interest label'),max_length=255)
+    person = models.ForeignKey('Person',)
+    objects = InterestManager()
+    
+    def __unicode__(self):
+        return self.label
+
+    def save(self, *args, **kwargs):
+        self.to_rdf()
+        STORE.commit()
+        
+    def to_rdf(self):
+        uri = URIRef(self.uri)
+        STORE.add((FOAF_URI, FOAF['topic_interest'], uri))
+        STORE.add((uri, RDFS.label, Literal(self.label)))
+        rdf=STORE.serialize(format="nt")
+        logging.debug('Interest.to_rdf(), rdf')
+        logging.debug(rdf)
+        return rdf
 
 class PersonManager(models.Manager):
     def all(self):
         persons = []
-        uris = [p for p in STORE.subjects(RDF.type, FOAF["Person"])]
-        for uri in uris:
-            persons.append(self.get(uri))
+        #uris = [p for p in STORE.subjects(RDF.type, FOAF["Person"])]
+        #for uri in uris:
+        persons.append(self.get())
         return persons
     
-    def get(self, uri):
-        uri = [s for s in STORE.subjects(RDF.type, FOAF["Person"])][0]
-        name = [o for o in STORE.objects(URIRef(uri), FOAF["nickname"])][0]
-        p = self.model(User.objects.all()[0], name)
-        return p
-        
+    def get(self):
+        #uri = [s for s in STORE.subjects(RDF.type, FOAF["Person"])][0]
+        #name = [o for o in STORE.objects(URIRef(uri), FOAF["nickname"])][0]
+        #p = self.model(User.objects.all()[0], name)
+        #return p
+        person = None
+        q = query_select_person % (FOAF_URI, FOAF_URI)
+        r = STORE.query(q, initNs=NS)
+        for instance in r:
+            logging.debug('PersonManager.get() instance')
+            logging.debug(instance)
+            #uri, container, content, created, title, reply_of, 
+            #reply_of_of, presence, location, locname = instance
+            name = instance[0]
+            post = Person(name = name)
+        return person
+
 
 class Person(models.Model):
     #user = models.ForeignKey(User, unique=True)
     #user = OneToOneField(User)
     name = models.CharField(max_length=100, # default='anonymous',
                            blank=True) # , null=True
-    #objects = PersonManager()
+    # depiction
+    #interests = models.ManyToManyField(Interest)
+    #relationships
+    objects = PersonManager()
 
     @models.permalink
     def get_absolute_url(self):
@@ -88,11 +214,12 @@ class Person(models.Model):
         
     #models.permalink
     def uri(self):
-    #    return self.get_absolute_url()
-        return "/person/"
+        return self.get_absolute_url()
+        #return "/person/"
         #return ('person', [])
         #return ('djsmob.views.person')
         #return ('djsmob-person')
+        #return FOAF
 
     def __unicode__(self):
         #return unicode(self.user.username)
@@ -113,15 +240,11 @@ class Person(models.Model):
 ##        self.name = [p for p in STORE.subjects(RDF.type, FOAF["Person"])]
 
     def to_rdf(self):
-
-        #namespaces
-        [STORE.bind(*x) for x in NS.items()]
-        uri = URIRef(self.uri())
-        STORE.add((uri, RDF.type, FOAF["Person"]))
-        STORE.add((uri, RDF.type, FOAF['PersonalProfileDocument']))
-        STORE.add((uri, FOAF['maker'], uri))
-        STORE.add((uri, FOAF['primaryTopic'],uri))
-        STORE.add((uri, FOAF['nickname'],Literal(self.name)))
+        STORE.add((FOAF_URI, RDF.type, FOAF["Person"]))
+        STORE.add((FOAF_DOC_URI, RDF.type, FOAF['PersonalProfileDocument']))
+        STORE.add((FOAF_URI, FOAF['maker'], FOAF_URI))
+        STORE.add((FOAF_URI, FOAF['primaryTopic'], FOAF_URI))
+        STORE.add((FOAF_URI, FOAF['nickname'],Literal(self.name)))
         # if foar_uri != me_uri
         # STORE.add((uri, RDFS['seeAlso'],foaf_uri))
         
@@ -184,12 +307,14 @@ class PostManager(models.Manager):
             reply_of = instance[5]
             reply_of_of = instance[6]
             presence = instance[7]
-            location = instance[8]
-            locname = instance[9]
+            location_uri = instance[8]
+            location_label = instance[9]
             post = Post(slug = uri.replace(str(POST_URI),''), 
                         title = title,
                         content= content, created=created, 
-                        reply_of = reply_of, location = location)
+                        reply_of = reply_of, 
+                        location_label = location_label,
+                        location_uri = location_uri)
             posts.append(post)
         return posts
             
@@ -215,11 +340,13 @@ class PostManager(models.Manager):
             reply_of = instance[4]
             reply_of_of = instance[5]
             presence = instance[6]
-            location = instance[7]
-            locname = instance[8]
+            location_uri = instance[7]
+            location_label = instance[8]
             post = Post(slug = slug, title = title,
                         content= content, created=created, 
-                        reply_of = reply_of, location = location)
+                        reply_of = reply_of,
+                        location_label = location_label,
+                        location_uri = location_uri)
         return post
 
 class Post(models.Model):
@@ -231,7 +358,7 @@ class Post(models.Model):
     #reply_of = models.URLField(_(''), default='', editable=False)
     reply_of = models.ForeignKey('Post', blank=True, null=True)
     #location = models.ForeignKey(Location, blank=True, null=True)
-    location_uri = models.URLField(_('location uri'), editable=False)
+    location_uri = models.URLField(_('location uri'), blank=True, null=True)
     location_label = models.CharField(_('location'), max_length=140, blank=True, null=True)
     
 #    has_creator = models.URLField(_(''), default='', editable=False)
@@ -307,15 +434,17 @@ class Post(models.Model):
             STORE.add((post_uri, SIOC["reply_of"], URIRef(self.reply_of.uri())))
         
         #opo_uri = URIRef(self.opo_uri())
+        #FIXME: hackish
+        opo_uri = URIRef("http://localhost:8000/me#presence")
         #STORE.add((opo_uri, RDF.type, OPO["OnlinePresence"]))
         #STORE.add((opo_uri, OPO["declaredOn"], URIRef(self.has_creator())))
         #STORE.add((opo_uri, OPO["declaredBy"], URIRef(self.maker())))
         #STORE.add((opo_uri, OPO["StartTime"], Literal(self.created)))
         #STORE.add((opo_uri, OPO["customMessage"], post_uri))
         
-        if self.location:
-            STORE.add((opo_uri, OPO["currentLocation"], URIRef(self.location.uri)))
-            STORE.add((URIRef(self.location.uri), RDFS["label"], Literal(self.location.label)))
+        if self.location_label and self.location_uri:
+            STORE.add((opo_uri, OPO["currentLocation"], URIRef(self.location_uri)))
+            STORE.add((URIRef(self.location_uri), RDFS.label, Literal(self.location_label)))
         #STORE.add(())
         
 
@@ -350,8 +479,8 @@ class Post(models.Model):
         #g.add((opo_uri, OPO["customMessage"], post_uri))
         
         if self.location:
-            g.add((opo_uri, OPO["currentLocation"], URIRef(self.location.uri)))
-            g.add((URIRef(self.location.uri), RDFS["label"], Literal(self.location.label)))
+            g.add((opo_uri, OPO["currentLocation"], URIRef(self.location_uri)))
+            g.add((URIRef(self.location_uri), RDFS.label, Literal(self.location_label)))
         #g.add(())
         
         rdf=g.serialize(format="nt")
@@ -368,3 +497,41 @@ class Post(models.Model):
         logging.debug('Post.rdf(), rdf')
         logging.debug(rdf)
         return rdf
+
+class ConfigurationManager(models.Manager):
+    def get(self):
+        from config import *
+        c = Configuration(site_url = SITE_URL, hub_url = HUB_URL, 
+            hub_publish_url = HUB_PUBLISH_URL, 
+            hub_subscribe_url = HUB_SUBSCRIBE_URL, 
+            websocket_host = WEBSOCKET_HOST,
+            websocket_port =  WEBSOCKET_PORT)
+        return c
+        
+
+class Configuration(models.Model):
+    #djdb = models.CharField(_('Django DB'), default="dev.db", max_length=255)
+    #storedb = models.CharField(_('Django DB'), default="smob.db", max_length=255)
+    site_url = models.URLField(_('Site URL'), default='http://localhost:8000')
+    hub_url = models.URLField(_('Hub URL'), default='http://localhost:8080')
+    hub_publish_url = models.URLField(_('Hub Publish URL'), default='http://localhost:8080/publish')
+    hub_subscribe_url = models.URLField(_('Hub Subscribe URL'), default='http://localhost:8080/subscribe')
+    websocket_host =  models.CharField(_('Websocket Host'), default='localhost', max_length=255)
+    websocket_port =  models.IntegerField(_('Websocket Port'), default=8081)
+    external_foaf_uri = models.URLField(_('External FOAF URI'), blank=True, null=True)
+
+    def save(self, *args, **kwargs):
+        data = """SITE_URL = "%s"
+HUB_URL = "%s"
+HUB_PUBLISH_URL = "%s"
+HUB_SUBSCRIBE_URL = "%s"
+WEBSOCKET_HOST = "%s"
+WEBSOCKET_PORT = "%s"
+EXTERNAL_FOAF_DOC = "%s" """ % (
+        self.site_url, self.hub_url, self.hub_publish_url, 
+        self.hub_subscribe_url, self.websocket_host, 
+        self.websocket_port,
+        self.external_foaf_uri)
+        f = open(settings.CONFIG_FILE,'w')
+        f.write(data)
+        f.close()

@@ -1,6 +1,11 @@
 {% extends "base_site.html" %}
 {% load adminmedia  i18n %}
 
+{% block extrahead %}
+    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery-1.7.1.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery.formset.js"></script>
+{% endblock %}
+
 {% block content %}
 
   <h2>Edit profile</h2>

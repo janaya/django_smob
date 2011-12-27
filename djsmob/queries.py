@@ -73,6 +73,37 @@ WHERE {
 } """ # % (uri, uri)
 
 """
+Select interests
+
+"""
+query_interests = """SELECT ?interest ?interest_label 
+ WHERE {
+      ?me foaf:topic_interest ?interest .
+      ?interest rdfs:label ?interest_label . }"""
+
+"""
+Insert hub into graph
+
+"""
+query_insert_hub = """INSERT INTO %s { 
+    %s a push:SemanticHub . 
+    %s push:has_hub %s .
+    %s push:has_owner %s . 
+}"""
+# HUB_URI, SITE_URI, djsmob-rssrdf, SITE_URI, djsmob-rssrdf, FOAF_DOC_URI
+
+"""
+Select hub
+
+"""
+query_select_hub = """SELECT ?site_uri ?site_rss ?foaf_doc_uri
+WHERE { 
+    ?site_uri a push:SemanticHub . 
+    ?site_rss push:has_hub ?site_uri .
+    ?site_rss push:has_owner ?foaf_doc_uri . 
+}"""
+
+"""
 Insert triples into graph URI
 
 """
@@ -89,6 +120,18 @@ WHERE {
         ?s ?p ?o
     }
 }""" #% graph
+
+"""
+Select person name
+
+"""
+query_select_person = """SELECT ?name 
+WHERE {
+    %s a foaf:Person .
+    %s foaf:nickname ?name .
+}
+"""
+# FOAF_URI
 
 """
 Get graph

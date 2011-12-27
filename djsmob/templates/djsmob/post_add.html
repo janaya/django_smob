@@ -1,6 +1,13 @@
 {% extends "base_site.html" %}
 {% load adminmedia  i18n %}
 
+{% block extrahead %}
+    <link type="text/css" rel="stylesheet" href="{{ STATIC_URL }}css/jquery.autocomplete.css">
+    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery-1.7.1.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery.dimensions.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery.autocomplete.js"></script>
+{% endblock %}
+
 {% block content %}
   <h2>Add post</h2>
   {% if form.errors %}

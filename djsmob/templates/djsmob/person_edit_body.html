@@ -1,6 +1,23 @@
+<script type="text/javascript">
+    $(function() {
+        $('#person_edit_form_formset li').formset({
+            // For inline formsets, be sure to set the prefix, as the default prefix
+            // ('form') isn't correct.
+            // Django appears to generate the prefix from the lowercase plural
+            // name of the related model, with camel-case converted to underscores.
+            prefix: 'interests'
+        })
+    })
+</script>
 <div id="post_add_form-message">
 </div>
 <form id="person_edit_form" action="{% url djsmob-person_edit %}" method="post" class="person_edit">{% csrf_token %}
-{{ form.as_ul }}
-<input type="submit" value="Edit" id="form-submit" />
+    {{ form.as_ul }}
+    <ul id="person_edit_form_formset">
+        {% for form in formset.forms %}
+          <li>{{ form }}</li>
+        {% endfor %}
+    </ul>
+    {{ formset.management_form }}
+    <input type="submit" value="Edit" id="form-submit" />
 </form>

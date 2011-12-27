@@ -12,11 +12,22 @@ def sindice_candidates(request, term):
     candidates = get_sindice_candidates(term)
     return HttpResponse(json.dumps(candidates), mimetype="application/json")
 
-def geo_candidates(request, term):
+def geo_candidates(request, term=None):
+    if not term: term = request.GET.get('q')
     candidates = get_geo_candidates(term)
     return HttpResponse(json.dumps(candidates), mimetype="application/json")
 
-def term_candidates(request,term):
+def html_geo_candidates(request,term=None):
+    if not term: term = request.GET.get('q')
+    candidates = get_geo_candidates(term)
+    return render_to_response('djlod/geo_candidates.html', 
+                               {'term': term,
+                               'candidates': candidates,
+                               },
+                               context_instance=RequestContext(request))
+                               
+def html_term_candidates(request,term=None):
+    if not term: term = request.GET.get('q')
     dbpedia_candidates = get_dbpedia_candidates(term)
     sindice_candidates = get_sindice_candidates(term)
     return render_to_response('djlod/term_candidates.html', 

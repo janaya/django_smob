@@ -64,12 +64,15 @@ NS = dict(
           geo=GEO)
 
 # site specific namespaces
-
+# FIXME: change settings by config?
 SITE_URI = URIRef(settings.SITE_URL)
-FOAF_DOC_URI = URIRef(settings.SITE_URL + "/me")
-FOAF_URI = URIRef(settings.SITE_URL + "/me#id")
+HUB_URI = URIRef(settings.SITE_URL + "/data/hub")
+RSS_URI = URIRef(settings.SITE_URL + "/rssrdf/post/")
+FOAF_DOC_URI = URIRef(settings.SITE_URL + "/data/person")
+FOAF_URI = URIRef(settings.SITE_URL + "/data/person#id")
 POST_URI = Namespace(settings.SITE_URL + "/data/post/")
 FOLLOWINGS_URI = URIRef(settings.SITE_URL + "/data/followings")
+FOLLOWERS_URI = URIRef(settings.SITE_URL + "/data/followers")
 PRIVACY_PREFERENCES_URI = URIRef(settings.SITE_URL + "/data/privacy_preferences")
 PRIVACY_PREFERENCE_URI = URIRef(settings.SITE_URL + "data/privacy_preference/")
-OPO_URI = URIRef(settings.SITE_URL + "/me#presence")
+OPO_URI = URIRef(settings.SITE_URL + "/data/person#presence")

@@ -31,10 +31,21 @@ def person_edit(request):
     if request.method == 'POST':
         print "method post"
         form = PersonForm(request.POST)
-        if form.is_valid():
+        formset = InterestFormSet(request.POST)
+        if form.is_valid() and formset.is_valid():
             print "form is valid"
+            data = formset.cleaned_data
+            print data
             person_instance = form.save()
-            
+            print person_instance
+            formset.save()
+            #formset = InterestFormSet(request.POST, 
+            #                          instance = person_instance)
+            #instances = formset.save(commit=False)
+            #for instance in instances:
+            #    instance.save()
+            #if formset.is_valid():
+            #   formset.save()
             if request.is_ajax():
                 print "request ajax"
                 response = {'status':True,}
@@ -54,8 +65,10 @@ def person_edit(request):
 
     else: # GET
         form = PersonForm()
+        formset = InterestFormSet()
         print "method not post  "
-    return render_to_response('djsmob/person_edit.html', {'form': form,},
+    return render_to_response('djsmob/person_edit.html', 
+                               {'form': form, 'formset': formset,},
                                context_instance=RequestContext(request))
 
 #@login_required
@@ -68,8 +81,10 @@ def post_add(request):
             print "form is valid"
             content = form.cleaned_data['content']
             print content
+            print form.cleaned_data['location_uri']
             post_instance = form.save(commit=False)
             print post_instance.content 
+            print post_instance.location_uri
             #post_instance.creator = request.user.profile
             #post_instance.creator = request.META['USER'].profile
             # hackish
@@ -125,7 +140,8 @@ def post(request, slug):
                                context_instance=RequestContext(request))
 def posts_json(request):
     posts = Post.objects.all()
-    return HttpResponse(serializers.serialize('json', posts), mimetype="application/json")
+    return HttpResponse(serializers.serialize('json', posts), 
+                        mimetype="application/json")
     return HttpResponse()
 
 def post_json(request, slug):
@@ -134,5 +150,40 @@ def post_json(request, slug):
     if slug:
         post = Post.objects.filter(slug=slug)
         print post
-        return HttpResponse(serializers.serialize('json', post), mimetype="application/json")
+        return HttpResponse(serializers.serialize('json', post), 
+                            mimetype="application/json")
     return HttpResponse()
+
+def config_add(request):
+    #logging.debug("request path")
+    #logging.debug(request.path)
+    #logging.debug(request.META['HTTP_REFERER'] )
+    #logging.debug("http://"+request.get_host() + request.get_full_path())
+    #logging.debug(request.build_absolute_uri())
+    if request.method == 'POST':
+        logging.debug("method post")
+        form = ConfigurationForm(request.POST)
+        if form.is_valid():
+            configuration_instance = form.save()
+            logging.debug("configuration file saved")
+            h = Hub.objects.get()
+            logging.debug("hub: ")
+            logging.debug(h)
+            if not h:
+                h = Hub()
+                h.save()
+                logging.debug("hub: ")
+                logging.debug(h)
+            return redirect('djsmob-person_edit')
+            #return render(request, 'home')
+            #return redirect('post_list')
+            #return HttpResponseRedirect(reverse('djsmob-post_list'))
+        else: 
+            logging.debug("form is not valid")
+
+    else: # GET
+        form = ConfigurationForm()
+        logging.debug("method not post  ")
+    return render_to_response('djsmob/config_add.html', 
+                               {'form': form},
+                               context_instance=RequestContext(request))
