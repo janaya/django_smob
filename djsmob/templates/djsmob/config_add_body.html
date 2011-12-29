@@ -1,0 +1,6 @@
+<div id="config_add_form-message">
+</div>
+<form id="config_add_form" action="{% url djsmob-install %}" method="post" class="config_add">{% csrf_token %}
+{{ form.as_ul }}
+<input type="submit" value="Add" id="form-submit" />
+</form>

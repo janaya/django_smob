@@ -1,0 +1,7 @@
+{% if candidates %}
+    {% for label,uri in candidates.items %}
+        <input type='checkbox' value='{{uri}}' />{{label}} (<a href='{{uri}}' target='_blank'>{{uri}}</a>)<br/>
+    {% endfor %}
+{% else %}
+    Nothing retrieved from this service<br/>
+{% endif %}
