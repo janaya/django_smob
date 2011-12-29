@@ -21,6 +21,7 @@
 # TODO:
 
 from django.db import models
+from django.db.models.query import QuerySet
 from django.contrib.auth.models import User
 from django.utils.translation import ugettext_lazy as _
 from django.template.defaultfilters import slugify
@@ -127,22 +128,56 @@ class Hub(models.Model):
         #g.commit()
         self.insert_query()
         
+class InterestQuerySet(QuerySet):
+    def get(self, label=None): 
+        logging.debug("InterestQuerySet.get")
+        if label:
+            interest = None
+            q = query_interest % Literal(label).n3()
+            r = STORE.query(q, initNs=NS)
+            for instance in r:
+                logging.debug('InterestManager.all() instance')
+                logging.debug(instance)
+                
+                person = Person.objects.get()
+                uri = str(instance[0])
+                interest = Interest(uri = uri, 
+                            label = label, person = person)
+            return interest
+        else:
+            interests = []
+            q = query_interests
+            r = STORE.query(q, initNs=NS)
+            for instance in r:
+                logging.debug('InterestManager.all() instance')
+                logging.debug(instance)
+                
+                uri = str(instance[0])
+                label = str(instance[1])
+                person = Person.objects.get()
+                interest = Interest(uri = uri, 
+                            label = label, person = person)
+                interests.append(interest)
+            return interests
 
+    def ordered(self):
+        logging.debug("InterestQuerySet.ordered")
+        return False
+    
+    def __getattr__(self, attr, *args):
+        logging.debug("InterestQuerySet.__getattr__")
+        return getattr(self.get_query_set(), attr, *args)
+    
+    def  filter(self, *args, **kwargs):
+        logging.debug("InterestQuerySet.filter")
+        #kwargs = {person: p}
+        return self.get()
+    
 class InterestManager(models.Manager):
-    def all():
-        interests = []
-        q = query_interests
-        r = STORE.query(q, initNs=NS)
-        for instance in r:
-            logging.debug('InterestManager.all() instance')
-            logging.debug(instance)
-            
-            uri = instance[0]
-            label = instance[1]
-            interest = Interest(uri = uri, 
-                        label = label,)
-            interests.append(interest)
-        return interests
+        
+    def get_query_set(self):
+        logging.debug("InterestManager.get_query_set")
+        return InterestQuerySet(self.model)
 
 class Interest(models.Model):
     uri = models.URLField(_('interest uri'), )
@@ -174,21 +209,23 @@ class PersonManager(models.Manager):
         persons.append(self.get())
         return persons
     
-    def get(self):
+    def get(self, name=None):
         #uri = [s for s in STORE.subjects(RDF.type, FOAF["Person"])][0]
         #name = [o for o in STORE.objects(URIRef(uri), FOAF["nickname"])][0]
         #p = self.model(User.objects.all()[0], name)
         #return p
         person = None
-        q = query_select_person % (FOAF_URI, FOAF_URI)
+        q = query_select_person % (FOAF_URI.n3(), FOAF_URI.n3())
         r = STORE.query(q, initNs=NS)
         for instance in r:
             logging.debug('PersonManager.get() instance')
             logging.debug(instance)
             #uri, container, content, created, title, reply_of, 
             #reply_of_of, presence, location, locname = instance
-            name = instance[0]
-            post = Person(name = name)
+            name = str(instance[0])
+            person = Person(name = name)
+        logging.debug("PersonManager.get, person")
+        logging.debug(person)
         return person
 
 
@@ -223,7 +260,7 @@ class Person(models.Model):
 
     def __unicode__(self):
         #return unicode(self.user.username)
-        return self.uri()
+        return self.name
 
     def save(self, *args, **kwargs):
 ##        if not self.user:

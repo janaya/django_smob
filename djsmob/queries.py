@@ -82,6 +82,16 @@ query_interests = """SELECT ?interest ?interest_label
       ?interest rdfs:label ?interest_label . }"""
 
 """
+Select interest from name
+
+"""
+query_interest = """SELECT ?interest  
+ WHERE {
+      ?me foaf:topic_interest ?interest .
+      ?interest rdfs:label %s . }"""
+# % interest_label
+
+"""
 Insert hub into graph
 
 """

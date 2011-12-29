@@ -26,7 +26,7 @@ urlpatterns = patterns('djsmob.views',
     url(r'^install/$', 'config_add', name='djsmob-install'),
     url(r'^person/$', 'person', name='djsmob-person'),
     url(r'^person/edit/$', 'person_edit', name='djsmob-person_edit'),
-    #url(r'^person/edit/$', 'person_edit', name='djsmob-person_edit'),
+    #url(r'^person/edit/(?P<name>[-\w]+)/$', 'person_edit', name='djsmob-person_edit'),
 
     url(r'^post/add/$', 'post_add', name='djsmob-post_add'),
     url(r'^post/$', 

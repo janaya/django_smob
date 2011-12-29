@@ -1,5 +1,6 @@
 from django.http import HttpResponse, HttpResponseRedirect, Http404
-from django.shortcuts import render_to_response, redirect, render
+from django.shortcuts import render_to_response, redirect, render, \
+    get_object_or_404
 from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
@@ -14,7 +15,7 @@ from forms import *
 from namespaces import *
 
 def person(request):
-#    print request.user
+#    logging.debug(request.user)
 #    profile = request.user.get_profile()
     person = request.user.profile
     #profile = request.META['USER']
@@ -27,17 +28,33 @@ def person_rdf(request):
                         content_type='application/rdf+xml')
 
 #@login_required
-def person_edit(request):
+def person_edit(request): #, name=None):
+    logging.debug("views.py person_edit")
+    #if name:
+    #    logging.debug("views.py person_edit, name")
+    #    logging.debug(name)
+    #    #person = get_object_or_404(Person, name=name)
+    #    person = Person.objects.get()
+    #    #if person != request.user:
+    #    #    raise HttpResponseForbidden()
+    #    logging.debug("views.py person_edit, person")
+    #    logging.debug(person)
+    #else:
+    #    person = Person()
+    try:
+        person = Person.objects.get()
+    except:
+        person = Person()
     if request.method == 'POST':
-        print "method post"
-        form = PersonForm(request.POST)
-        formset = InterestFormSet(request.POST)
+        logging.debug("method post")
+        form = PersonForm(request.POST, instance=person)
+        formset = InterestFormSet(request.POST, instance=person)
         if form.is_valid() and formset.is_valid():
-            print "form is valid"
+            logging.debug("form is valid")
             data = formset.cleaned_data
-            print data
+            logging.debug(data)
             person_instance = form.save()
-            print person_instance
+            logging.debug(person_instance)
             formset.save()
             #formset = InterestFormSet(request.POST, 
             #                          instance = person_instance)
@@ -47,7 +64,7 @@ def person_edit(request):
             #if formset.is_valid():
             #   formset.save()
             if request.is_ajax():
-                print "request ajax"
+                logging.debug("request ajax")
                 response = {'status':True,}
                 json = simplejson.dumps(response, ensure_ascii=False)
                 return HttpResponse(json, mimetype="application/json")
@@ -56,17 +73,17 @@ def person_edit(request):
                 return redirect('home')
         else: # form no valid
             if request.is_ajax():
-                print "request ajax"
+                logging.debug("request ajax")
                 response = {'status':False,'errors':form.errors}
                 json = simplejson.dumps(response, ensure_ascii=False)
                 return HttpResponse(json, mimetype="application/json")
             else:
-                print "form is not valid"
+                logging.debug("form is not valid")
 
     else: # GET
-        form = PersonForm()
-        formset = InterestFormSet()
-        print "method not post  "
+        form = PersonForm(instance=person)
+        formset = InterestFormSet(instance=person)
+        logging.debug("method not post  ")
     return render_to_response('djsmob/person_edit.html', 
                                {'form': form, 'formset': formset,},
                                context_instance=RequestContext(request))
@@ -75,16 +92,16 @@ def person_edit(request):
 def post_add(request):
     logging.debug("views.py, post_add")
     if request.method == 'POST':
-        print "method post"
+        logging.debug("method post")
         form = PostForm(request.POST)
         if form.is_valid():
-            print "form is valid"
+            logging.debug("form is valid")
             content = form.cleaned_data['content']
-            print content
-            print form.cleaned_data['location_uri']
+            logging.debug(content)
+            logging.debug(form.cleaned_data['location_uri'])
             post_instance = form.save(commit=False)
-            print post_instance.content 
-            print post_instance.location_uri
+            logging.debug(post_instance.content)
+            logging.debug(post_instance.location_uri)
             #post_instance.creator = request.user.profile
             #post_instance.creator = request.META['USER'].profile
             # hackish
@@ -99,7 +116,7 @@ def post_add(request):
             post_instance.save()
             
             if request.is_ajax():
-                print "request ajax"
+                logging.debug("request ajax")
                 response = {'status':True,}
                 json = simplejson.dumps(response, ensure_ascii=False)
                 return HttpResponse(json, mimetype="application/json")
@@ -110,12 +127,12 @@ def post_add(request):
         else: # form no valid
         
             if request.is_ajax():
-                print "request ajax"
+                logging.debug("request ajax")
                 response = {'status':False,'errors':form.errors}
                 json = simplejson.dumps(response, ensure_ascii=False)
                 return HttpResponse(json, mimetype="application/json")
             else:
-              print "form is not valid"
+              logging.debug("form is not valid")
 
     else: # GET
         form = PostForm()
@@ -146,10 +163,10 @@ def posts_json(request):
 
 def post_json(request, slug):
 #    slug = request.GET.get("post_slug")
-    print slug
+    logging.debug(slug)
     if slug:
         post = Post.objects.filter(slug=slug)
-        print post
+        logging.debug(post)
         return HttpResponse(serializers.serialize('json', post), 
                             mimetype="application/json")
     return HttpResponse()
