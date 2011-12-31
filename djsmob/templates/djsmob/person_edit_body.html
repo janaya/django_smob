@@ -9,6 +9,55 @@
         })
     })
 </script>
+
+<script type="text/javascript" >
+    //$("#id_location_label").autocomplete("/lod/geo/html/");
+    
+    //$("id_location_label").autocomplete("/lod/geo/", {
+    //    dataType: "json",
+    //});
+
+    //$("id_location_label").autocomplete("/lod/geo/", {
+    //  formatItem: function(item) {
+    //    return item.text;
+    //  }
+    //}).result(function(event, item) {
+    //  location.href = item.url;
+    //});
+    // http://1300grams.com/2009/08/17/jquery-autocomplete-with-json-jsonp-support-and-overriding-the-default-search-parameter-q/
+      $(document).ready(function() {
+        $("#id_interest_set-0-label").autocomplete("http://localhost:8000/lod/dbpedia/semantic/", {
+            dataType: 'json',
+            parse: function(data) {
+                var rows = new Array();
+                var i=0;
+                for(var uri in data){
+                    rows[i] = { data:data, label:data[uri], uri:uri };
+                    i++;
+                }
+                return rows;
+            },
+            formatItem: function(row, i, n) {
+                return row.label;
+            },
+            extraParams: {
+                // geonames doesn't support q and limit, which are the autocomplete plugin defaults, so let's blank them out.
+                q: '',
+                limit: '',
+                //country: 'US',
+                featureClass: 'P',
+                style: 'full',
+                maxRows: 50,
+                name_startsWith: function () { return $("#id_interest_set-0-label").val() }
+            },
+            max: 50
+        }).result(function(event, item) {
+          $("#id_interest_set-0-uri").val(item.uri);
+          //$("#id_location_uri").text("http://sws.geonames.org/"+item.geonameId+"/").html();
+        }); 
+         
+      });
+</script>
 <div id="post_add_form-message">
 </div>
 <form id="person_edit_form" action="{% url djsmob-person_edit %}" method="post" class="person_edit">{% csrf_token %}

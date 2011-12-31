@@ -40,6 +40,8 @@ import rdflib
 from namespaces import *
 from queries import *
 
+from .db.query import Query
+
 #logger = logging.getLogger('django_smob')
 
 logging.debug("how many times is executed models.py?")
@@ -64,8 +66,9 @@ STORE = rdflib.Graph(STORE_DB)
 #http://xmppwebid.github.com/xmppwebid/julia
 #[STORE.bind(*x) for x in NS.items()]
 
+
 class HubManager(models.Manager):
-    def get(self):
+    def get(self, *args, **kwargs):
         hub = None
         q = query_select_hub
         r = STORE.query(q, initNs=NS)
@@ -127,79 +130,6 @@ class Hub(models.Model):
         #g = self.to_graph()
         #g.commit()
         self.insert_query()
-        
-class InterestQuerySet(QuerySet):
-    def get(self, label=None): 
-        logging.debug("InterestQuerySet.get")
-        if label:
-            interest = None
-            q = query_interest % Literal(label).n3()
-            r = STORE.query(q, initNs=NS)
-            for instance in r:
-                logging.debug('InterestManager.all() instance')
-                logging.debug(instance)
-                
-                person = Person.objects.get()
-                uri = str(instance[0])
-                interest = Interest(uri = uri, 
-                            label = label, person = person)
-            return interest
-        else:
-            interests = []
-            q = query_interests
-            r = STORE.query(q, initNs=NS)
-            for instance in r:
-                logging.debug('InterestManager.all() instance')
-                logging.debug(instance)
-                
-                uri = str(instance[0])
-                label = str(instance[1])
-                person = Person.objects.get()
-                interest = Interest(uri = uri, 
-                            label = label, person = person)
-                interests.append(interest)
-            return interests
-
-    def ordered(self):
-        logging.debug("InterestQuerySet.ordered")
-        return False
-    
-    def __getattr__(self, attr, *args):
-        logging.debug("InterestQuerySet.__getattr__")
-        return getattr(self.get_query_set(), attr, *args)
-    
-    def  filter(self, *args, **kwargs):
-        logging.debug("InterestQuerySet.filter")
-        #kwargs = {person: p}
-        return self.get()
-    
-class InterestManager(models.Manager):
-        
-    def get_query_set(self):
-        logging.debug("InterestManager.get_query_set")
-        return InterestQuerySet(self.model)
-
-class Interest(models.Model):
-    uri = models.URLField(_('interest uri'), )
-    label = models.CharField(_('interest label'),max_length=255)
-    person = models.ForeignKey('Person',)
-    objects = InterestManager()
-    
-    def __unicode__(self):
-        return self.label
-
-    def save(self, *args, **kwargs):
-        self.to_rdf()
-        STORE.commit()
-        
-    def to_rdf(self):
-        uri = URIRef(self.uri)
-        STORE.add((FOAF_URI, FOAF['topic_interest'], uri))
-        STORE.add((uri, RDFS.label, Literal(self.label)))
-        rdf=STORE.serialize(format="nt")
-        logging.debug('Interest.to_rdf(), rdf')
-        logging.debug(rdf)
-        return rdf
 
 class PersonManager(models.Manager):
     def all(self):
@@ -223,7 +153,7 @@ class PersonManager(models.Manager):
             #uri, container, content, created, title, reply_of, 
             #reply_of_of, presence, location, locname = instance
             name = str(instance[0])
-            person = Person(name = name)
+            person = Person(uri = str(FOAF_URI), name = name)
         logging.debug("PersonManager.get, person")
         logging.debug(person)
         return person
@@ -232,8 +162,9 @@ class PersonManager(models.Manager):
 class Person(models.Model):
     #user = models.ForeignKey(User, unique=True)
     #user = OneToOneField(User)
-    name = models.CharField(max_length=100, # default='anonymous',
-                           blank=True) # , null=True
+    uri = models.URLField(_('FOAF uri'), default=str(FOAF_URI), 
+                        editable = False, primary_key=True)
+    name = models.CharField(_('name'), max_length=100)
     # depiction
     #interests = models.ManyToManyField(Interest)
     #relationships
@@ -248,15 +179,6 @@ class Person(models.Model):
 
 #    def uri(self):
 #        return "%s%s" % (self.get_absolute_url(), self.created) 
-        
-    #models.permalink
-    def uri(self):
-        return self.get_absolute_url()
-        #return "/person/"
-        #return ('person', [])
-        #return ('djsmob.views.person')
-        #return ('djsmob-person')
-        #return FOAF
 
     def __unicode__(self):
         #return unicode(self.user.username)
@@ -269,6 +191,7 @@ class Person(models.Model):
 ##            if not self.name:
 ##                self.name = self.user.username
 ##        #super(Person, self).save(*args, **kwargs)
+        self.uri = str(FOAF_URI)
         self.to_rdf()
         STORE.commit()
 
@@ -303,6 +226,186 @@ class Person(models.Model):
 
 #User.profile = property(lambda u: Person.objects.get_or_create(user=u)[0])
 
+def get_person():
+    return Person.objects.get()
+
+        
+class InterestQuerySet(QuerySet):
+    def __init__(self, model=None, query=None, *args, **kwargs):
+        self.model = model
+        self.query = query or Query()
+        self._result_cache = None
+        self._iter = None
+        self._sticky_filter = False
+        self._db = False
+        self.ordered = False
+        self._for_write = False
+
+        self.params = {}
+
+    def iterator(self):
+        #XXX get parameters:
+        #self.query.parameters
+        #and do the proper query to the STORE
+        logging.debug('interest iterator')
+        q = query_interests
+        r = STORE.query(q, initNs=NS)
+
+        #XXX try me
+        #for i in range(1,10):
+        #    yield i
+
+        for instance in r:
+            logging.debug('InterestManager.all() instance')
+            logging.debug(instance)
+            uri = str(instance[0])
+            label = str(instance[1])
+            person = Person.objects.get()
+            interest = Interest(uri = uri,
+                        label = label, person = person)
+            yield interest
+
+    def get(self, label=None, *args, **kwargs):
+        logging.debug("InterestQuerySet.get")
+        if label:
+            interest = None
+            q = query_interest % Literal(label).n3()
+            r = STORE.query(q, initNs=NS)
+            for instance in r:
+                logging.debug('InterestManager.all() instance')
+                logging.debug(instance)
+                
+                person = Person.objects.get()
+                uri = str(instance[0])
+                interest = Interest(uri = uri, 
+                            label = label, person = person)
+            logging.debug('returning int, 1st')
+            return interest
+        else:
+            interests = []
+            q = query_interests
+            r = STORE.query(q, initNs=NS)
+            for instance in r:
+                logging.debug('InterestManager.all() instance')
+                logging.debug(instance)
+                
+                uri = str(instance[0])
+                label = str(instance[1])
+                person = Person.objects.get()
+                interest = Interest(uri = uri, 
+                            label = label, person = person)
+                interests.append(interest)
+            logging.debug('returning interesets')
+            logging.debug('int = %s' % interests)
+            #return self
+            return interests
+            #return super(InterestQuerySet, self).get(*args, **kwargs)
+
+    def order_by(self, *field_names):
+        """
+        Returns a QuerySet instance with the ordering changed.
+        """
+        assert self.query.can_filter(), \
+                "Cannot reorder a query once a slice has been taken."
+
+        clone = self._clone()
+        for field_name in field_names:
+            clone.query.order_by.append(field_name)
+        return clone
+
+
+    @property
+    def ordered(self):
+        logging.debug("InterestQuerySet.ordered")
+        return self._ordered
+    
+    @ordered.setter
+    def ordered(self, value):
+        #logging.debug('setting ordered')
+        self._ordered = value
+    
+    #def  filter(self, *args, **kwargs):
+    #    logging.debug("InterestQuerySet.filter")
+    #    #kwargs = {person: p}
+    #    return self.get()
+    # WTF? causes recursion
+    
+class InterestManager(models.Manager):
+    def get(self, label=None): 
+        logging.debug("InterestQuerySet.get")
+        if label:
+            interest = None
+            q = query_interest % Literal(label).n3()
+            r = STORE.query(q, initNs=NS)
+            for instance in r:
+                logging.debug('InterestManager.all() instance')
+                logging.debug(instance)
+                
+                person = Person.objects.get()
+                uri = str(instance[0])
+                interest = Interest(uri = uri, 
+                            label = label, person = person)
+            return interest
+        else:
+            interests = []
+            q = query_interests
+            r = STORE.query(q, initNs=NS)
+            for instance in r:
+                logging.debug('InterestManager.all() instance')
+                logging.debug(instance)
+                
+                uri = str(instance[0])
+                label = str(instance[1])
+                person = Person.objects.get()
+                interest = Interest(uri = uri, 
+                            label = label, person = person)
+                interests.append(interest)
+            return interests
+
+    def all(self):
+        interests = []
+        q = query_interests
+        r = STORE.query(q, initNs=NS)
+        for instance in r:
+            logging.debug('InterestManager.all() instance')
+            logging.debug(instance)
+            
+            uri = str(instance[0])
+            label = str(instance[1])
+            person = Person.objects.get()
+            interest = Interest(uri = uri, 
+                        label = label, person = person)
+            interests.append(interest)
+        return interests
+                    
+    #def get_query_set(self):
+    #    logging.debug("InterestManager.get_query_set")
+    #    return InterestQuerySet(self.model)
+
+class Interest(models.Model):
+    uri = models.URLField(_('interest uri'), )
+    label = models.CharField(_('interest label'),max_length=255)
+    person = models.ForeignKey('Person', default=get_person(), 
+                                editable=False)
+    objects = InterestManager()
+    
+    def __unicode__(self):
+        return self.label
+
+    def save(self, *args, **kwargs):
+        self.person = get_person()
+        self.to_rdf()
+        STORE.commit()
+        
+    def to_rdf(self):
+        uri = URIRef(self.uri)
+        STORE.add((FOAF_URI, FOAF['topic_interest'], uri))
+        STORE.add((uri, RDFS.label, Literal(self.label)))
+        rdf=STORE.serialize(format="nt")
+        logging.debug('Interest.to_rdf(), rdf')
+        logging.debug(rdf)
+        return rdf
+            
 class Relationship(models.Model):
     uri = models.URLField(_('relationship'), )
     label = models.CharField(_('label'),max_length=255)
@@ -315,12 +418,12 @@ class Relationship(models.Model):
 #    to_person = models.ForeignKey(Person)
 #    type_rel = models.ForeignKey(Relationship)
 
-class Location(models.Model):
-    uri = models.URLField(_('location'), )
-    label = models.CharField(_('label'),max_length=255)
-
-    def __unicode__(self):
-        return self.label
+#class Location(models.Model):
+#    uri = models.URLField(_('location'), )
+#    label = models.CharField(_('label'),max_length=255)
+#
+#    def __unicode__(self):
+#        return self.label
 
 class PostManager(models.Manager):
     def all(self):

@@ -8,7 +8,7 @@ GEO_BASE_URL = "http://ws.geonames.org/searchJSON?q=%s&maxRows=10"
 GEO_BASE_URI = "http://sws.geonames.org/"
 term = "RDF"
 
-def get_dbpedia_candidates(term):
+def get_dbpedia_candidates_dict(term):
     candidates = {}
     
     url = DBPEDIA_BASE_URL % term
@@ -25,6 +25,22 @@ def get_dbpedia_candidates(term):
         candidates[label]=uri
     return candidates
 
+def get_dbpedia_candidates(term):
+    candidates = []
+    
+    url = DBPEDIA_BASE_URL % term
+    f = urllib2.urlopen(url)
+    xml = f.read()
+
+    dom = parseString(xml)
+    results = dom.getElementsByTagName("Result")
+    for r in results:
+        label_nodes = r.getElementsByTagName("Label")[0]
+        label = label_nodes.childNodes[0].nodeValue
+        uri_nodes = r.getElementsByTagName("URI")[0]
+        uri = uri_nodes.childNodes[0].nodeValue
+        candidates.append({"label": label, "uri":uri})
+    return {"dbpedia": candidates}
 
 def get_sindice_candidates(term):
     candidates = {}

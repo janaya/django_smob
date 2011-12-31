@@ -49,6 +49,7 @@ urlpatterns = patterns('djsmob.views',
 ##    url(r'^json/post/$', 'posts_json', name='posts_json'),
 ##    url(r'^json/post/(?P<slug>[-\w]+)/$', 'post_json', name='post_json'),
 ##    
+    url(r'^interest/add/$', 'interest_add', name='djsmob-interest_add'),
 ##    url(r'^data/me/$', 'person_rdf', name='person_rdf'),
 )
 urlpatterns += patterns('',

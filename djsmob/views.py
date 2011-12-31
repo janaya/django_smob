@@ -30,6 +30,7 @@ def person_rdf(request):
 #@login_required
 def person_edit(request): #, name=None):
     logging.debug("views.py person_edit")
+    logging.debug(request.POST)
     #if name:
     #    logging.debug("views.py person_edit, name")
     #    logging.debug(name)
@@ -45,9 +46,14 @@ def person_edit(request): #, name=None):
         person = Person.objects.get()
     except:
         person = Person()
+        
+    # http://stackoverflow.com/questions/2581049/filter-queryset-in-django-inlineformset-factory
+    #InterestFormSet.form = staticmethod(curry(InterestForm, person=person))
+    
     if request.method == 'POST':
         logging.debug("method post")
         form = PersonForm(request.POST, instance=person)
+
         formset = InterestFormSet(request.POST, instance=person)
         if form.is_valid() and formset.is_valid():
             logging.debug("form is valid")
@@ -81,9 +87,11 @@ def person_edit(request): #, name=None):
                 logging.debug("form is not valid")
 
     else: # GET
+        logging.debug("method not post  ")
         form = PersonForm(instance=person)
         formset = InterestFormSet(instance=person)
-        logging.debug("method not post  ")
+        logging.debug("formset")
+        logging.debug(formset)
     return render_to_response('djsmob/person_edit.html', 
                                {'form': form, 'formset': formset,},
                                context_instance=RequestContext(request))
@@ -204,3 +212,49 @@ def config_add(request):
     return render_to_response('djsmob/config_add.html', 
                                {'form': form},
                                context_instance=RequestContext(request))
+
+
+#@login_required
+def interest_add(request):
+    person = Person.objects.get()
+    logging.debug("views.py, interest_add")
+    if request.method == 'POST':
+        logging.debug("method post")
+        form = InterestForm(request.POST, prefix="interest")
+        if form.is_valid():
+            logging.debug("form is valid")
+            content = form.cleaned_data['label']
+            logging.debug(content)
+            logging.debug(form.cleaned_data['uri'])
+            interest_instance = form.save(commit=False)
+            logging.debug(interest_instance.label)
+            logging.debug(interest_instance.uri)
+            interest_instance.person = Person.objects.get()
+            interest_instance.save()
+            
+            if request.is_ajax():
+                logging.debug("request ajax")
+                response = {'status':True,}
+                json = simplejson.dumps(response, ensure_ascii=False)
+                return HttpResponse(json, mimetype="application/json")
+#                return render(request, 'home')
+            else:
+                #return redirect('post_list')
+                return HttpResponseRedirect(reverse('djsmob-interest_list'))
+        else: # form no valid
+        
+            if request.is_ajax():
+                logging.debug("request ajax")
+                response = {'status':False,'errors':form.errors}
+                json = simplejson.dumps(response, ensure_ascii=False)
+                return HttpResponse(json, mimetype="application/json")
+            else:
+              logging.debug("form is not valid")
+
+    else: # GET
+        form = InterestForm(prefix="interest")
+        logging.debug("method not post")
+        logging.debug(form)
+    return render_to_response('djsmob/interest_add.html', {
+                              'form': form,
+                            }, context_instance=RequestContext(request))

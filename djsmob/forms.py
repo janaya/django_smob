@@ -1,7 +1,9 @@
 from django import forms
 from django.forms.models import inlineformset_factory
 #from datetime import datetime
-from models import Person, Post, Location, Interest, Configuration
+from models import *
+
+import logging
 
 MAX_LOCATION = 1
 MAX_INTEREST = 1
@@ -11,10 +13,23 @@ MAX_INTEREST = 1
 #    can_delete=True,
 #    extra=MAX_LOCATION)
 
+# http://stackoverflow.com/questions/2581049/filter-queryset-in-django-inlineformset-factory
+class InterestForm(forms.ModelForm):
+    person = forms.ModelChoiceField(queryset=Person.objects.all())
+    class Meta:
+        model = Interest
+    #def __init__(self, *args, **kwargs):
+    #    person = kwards.pop('person')
+    #    super(InterestForm, self).__init__(*args, **kwargs)
+    #    logging.debug("InterestForm.__init__() fields[person]")
+    #    self.fields["person"].queryset = Person.objects.get()
+        
+
 InterestFormSet = inlineformset_factory(Person, 
     Interest, 
     can_delete=True,
-    extra=MAX_INTEREST)
+    extra=MAX_INTEREST,
+    form=InterestForm)
 
 class PersonForm(forms.ModelForm):
    class Meta:

@@ -4,7 +4,8 @@ from django.template import RequestContext
 import json
 from lod_candidates.candidates import *
 
-def dbpedia_candidates(request, term):
+def dbpedia_candidates(request, term=None):
+    if not term: term = request.GET.get('q')
     candidates = get_dbpedia_candidates(term)
     return HttpResponse(json.dumps(candidates), mimetype="application/json")
 
