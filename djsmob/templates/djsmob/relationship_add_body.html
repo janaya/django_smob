@@ -1,0 +1,34 @@
+
+<script type="text/javascript" >
+      $(document).ready(function() {
+        $("#id_rel_type-label").autocomplete("http://vocab.org/relationship/.json", {
+            dataType: 'json',
+            parse: function(data) {
+                console.debug(data);
+                var rows = new Array();
+                data = data.geonames;
+                for(var i=0; i<data.length; i++){
+                    rows[i] = { data:data[i], value:data[i].name, result:data[i].name };
+                }
+                return rows;
+            },
+            formatItem: function(row, i, n) {
+                console.debug(row);
+                return row.name + " (" + row.countryName + ")";
+            },
+            extraParams: {
+                q: function () { return $("#id_rel_type-label").val() },
+            },
+            max: 50
+        }).result(function(event, item) {
+          $("#id_rel_type-uri").val(item.uri);
+        }); 
+         
+      });
+</script>
+<div id="relationship_add_form-message">
+</div>
+<form id="relationship_add_form" action="{% url djsmob-relationship_add %}" method="post" class="relationship_add">{% csrf_token %}
+{{ form.as_ul }}
+<input type="submit" value="Add" id="form-submit" />
+</form>

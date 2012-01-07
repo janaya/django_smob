@@ -1,0 +1,58 @@
+[ 
+ {
+    "model": "djsmob.configuration",
+    "pk": "http://localhost:8000",
+    "fields": {
+      "site_url": "http://localhost:8000",
+      "hub_url": "http://localhost:8000",
+      "hub_publish_url": "http://localhost:8080/publish",
+      "hub_subscribe_url": "http://localhost:8080/subscribe",
+      "websocket_host": "localhost",
+      "websocket_port": "8081",
+      "external_foaf_uri": "http://xmppwebid.github.com/xmppwebid/julia",
+    }
+  },
+ {
+    "model": "djsmob.hub",
+    "pk": "http://localhost:8000",
+    "fields": {
+      "site_uri": "http://localhost:8000",
+      "foaf_doc_uri": "http://localhost:8000/data/person",
+      "rss_url": "http://localhost:8000/rssrdf/post/" 
+    }
+  },
+  {
+    "model": "djsmob.person",
+    "pk": "http://localhost:8000/data/person#id",
+    "fields": {
+      "uri": "http://localhost:8000/data/person#id",
+      "name": "duy"
+    }
+  },
+  {
+    "model": "djsmob.interest",
+    "pk": 1,
+    "fields": {
+      "uri": "http://dbpedia.org/resource/Semantic_Web",
+      "label": "Semantic Web",
+      "person": "http://localhost:8000/data/person#id"
+    }
+  },
+  {
+    "model": "djsmob.post",
+    "pk": "http://localhost:8000/data/post/2012-01-04-081701148130",
+    "fields": {
+      "uri": "http://localhost:8000/data/post/2012-01-04-081701148130",
+      "slug": "2012-01-04-081701148130",
+      "title": "Updated - aaa",
+      "content": "aaa",
+      "created": "2012-01-04 10:03:16",
+      "location_uri": "http://sws.geonames.org/3117735/",
+      "location_label": "Madrid (Spain)",
+      "has_creator": "http://localhost:8000/data/person",
+      "maker": "http://localhost:8000/data/person#id",
+      "has_container": "http://localhost:8000",
+      "opo_uri": "http://localhost:8000/data/person#presence",
+    }
+  }
+]
